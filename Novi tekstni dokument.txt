@@ -1,0 +1,190 @@
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+let shoppingCart = [
+    {
+        name: 'Apple',
+        price: 1.99,
+        quantity: 1,
+    },
+    {
+        name: 'Banana',
+        price: 10,
+        quantity: 2,
+    },
+];
+
+let userMoney = 0;
+
+function addProduct(name, price, quantity) {
+  shoppingCart.push({ name: name, price: price, quantity: quantity });
+  console.log(`Product "${name}" added to the shopping cart.`);
+  askQuestion();
+}
+
+function viewCart() {
+  console.log("Shopping cart contents:");
+  shoppingCart.forEach(item => {
+    console.log(`${item.name} - ${item.quantity}x - ${item.price * item.quantity} $`);
+  });
+  askQuestion();
+}
+
+function removeProduct(name, quantity) {
+  const itemIndex = shoppingCart.findIndex(item => item.name === name);
+  
+  if (itemIndex === -1) {
+    console.log(`Product "${name}" not found.`);
+    askQuestion();
+    return;
+  }
+
+  const item = shoppingCart[itemIndex];
+
+  if (quantity && quantity > item.quantity) {
+    console.log(`Error: Requested quantity exceeds available quantity for ${name}.`);
+    askQuestion();
+    return;
+  }
+
+  if (quantity) {
+    shoppingCart[itemIndex].quantity -= quantity;
+    console.log(`Removed ${quantity} ${name} from the cart.`);
+  } else {
+    shoppingCart.splice(itemIndex, 1);
+    console.log(`Removed all ${name} from the cart.`);
+  }
+
+  askQuestion();
+}
+
+function showTotalPrice() {
+  let totalPrice = 0;
+  shoppingCart.forEach(item => {
+    totalPrice += item.price * item.quantity;
+  });
+  console.log(`Total price of the shopping cart: ${totalPrice} $`);
+  askQuestion();
+}
+
+function setUserMoney(money) {
+  userMoney = parseFloat(money);
+  console.log(`Your available money is set to: ${userMoney} $`);
+  askQuestion();
+}
+
+function buyProduct(name, quantity) {
+  const itemIndex = shoppingCart.findIndex(item => item.name === name);
+  
+  if (itemIndex === -1) {
+    console.log(`Product "${name}" not found.`);
+    askQuestion();
+    return;
+  }
+
+  const item = shoppingCart[itemIndex];
+  const totalPrice = item.price * quantity;
+
+  if (item.quantity < quantity) {
+    console.log(`Error: Insufficient quantity of ${name} in the cart.`);
+    askQuestion();
+    return;
+  }
+
+  if (userMoney < totalPrice) {
+    console.log(`Error: Insufficient funds to buy ${quantity} ${name}.`);
+    askQuestion();
+    return;
+  }
+
+  shoppingCart[itemIndex].quantity -= quantity;
+  userMoney -= totalPrice;
+  
+  console.log(`You bought ${quantity} ${name} for ${totalPrice} $.`);
+  console.log(`Your remaining money: ${userMoney} $`);
+
+  if (shoppingCart[itemIndex].quantity === 0) {
+    shoppingCart.splice(itemIndex, 1);
+    console.log(`All ${name} have been removed from the cart.`);
+  }
+
+  askQuestion();
+}
+
+function printHelp(){
+    console.log("add->adds an item to the cart \nfunction call->add name price quantity\nexample->add apple 1 1\n\nview->displays the entire cart\nfunction call->view\n\nremove->removes an item from the cart or specific quantity of that item \nfunction call->remove name quantity or remove name\nexample->remove apple 1 or remove apple\n\ntotal->displays the total price of the cart\nfunction call->total\n\nsetmoney->sets the available money\nfunction call->setmoney amount\nexample->setmoney 50\n\nbuy->allows to buy a specific item if enough money is available\nfunction call->buy name quantity\nexample->buy apple 1\n\nhelp->displays this help message\nfunction call->help\n\nclose->closes the cart\nfunction call->close\n\n");
+    askQuestion();
+}
+
+function endShopping() {
+  console.log("Thank you for shopping!");
+  rl.close();
+}
+
+function askForMoney() {
+  rl.question('Please enter the amount of money you have: ', (answer) => {
+    setUserMoney(answer);
+  });
+}
+
+function askQuestion() {
+  console.log("For instructions on how to use commands, type help\n");
+  rl.question('Please enter a command (help, add, view, remove, total, buy, close): ', (answer) => {
+    processInput(answer);
+  });
+}
+
+function processInput(input) {
+  const words = input.split(' ');
+  const command = words[0].toLowerCase();
+  const options = words.slice(1);
+
+  switch (command) {
+    case 'help':
+      printHelp();
+      break;
+    case 'add':
+      addProduct(options[0], parseFloat(options[1]), parseInt(options[2]));
+      break;
+    case 'view':
+      viewCart();
+      break;
+    case 'remove':
+      const itemName = options[0];
+      const itemQuantity = parseInt(options[1]);
+      if (!isNaN(itemQuantity)) {
+        removeProduct(itemName, itemQuantity);
+      } else {
+        removeProduct(itemName); 
+      }
+      break;
+    case 'total':
+      showTotalPrice();
+      break;
+    case 'setmoney':
+      setUserMoney(options[0]);
+      break;
+    case 'buy':
+      const buyItemName = options[0];
+      const buyItemQuantity = parseInt(options[1]);
+      if (!isNaN(buyItemQuantity)) {
+        buyProduct(buyItemName, buyItemQuantity);
+      } else {
+        console.log("Please enter a valid quantity.");
+        askQuestion();
+      }
+      break;
+    case 'close':
+      endShopping();
+      break;
+    default:
+      console.log('Unknown command. Please try again.');
+      askQuestion();
+  }
+}
+
+askForMoney();
